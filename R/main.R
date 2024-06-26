@@ -2,12 +2,22 @@ library(readr)
 library(dplyr)
 library(stringr)
 library(sf)
+library(ggplot2)
 library(plotly)
+library(gt)
+library(leaflet)
 
 source("correction/R/import_data.R")
 source("correction/R/create_data_list.R")
 source("correction/R/clean_dataframe.R")
+source("correction/R/divers_functions.R")
+source("correction/R/tables.R")
 source("correction/R/figures.R")
+
+YEARS_LIST  <- as.character(2018:2022)
+MONTHS_LIST <- 1:12
+year <- YEARS_LIST[1]
+month <- MONTHS_LIST[1]
 
 
 # Load data ----------------------------------
@@ -23,17 +33,28 @@ airports_location <- st_read(urls$geojson$airport)
 liste_aeroports <- unique(pax_apt_all$apt)
 default_airport <- liste_aeroports[1]
 
-a <- pax_apt_all %>%
-  mutate(trafic=apt_pax_dep + apt_pax_tr + apt_pax_arr) %>%
-  mutate(date=lubridate::ym(anmois)) %>%
-  mutate(infobulle=paste("Aeroport :",apt_nom,", trafic :"))
-  filter(apt==default_airport) 
+# OBJETS NECESSAIRES A L'APPLICATION ------------------------
 
-ggplot(data = a, aes(x = date, y = trafic)) + geom_line()
+trafic_aeroports <- pax_apt_all %>%
+  mutate(trafic = apt_pax_dep + apt_pax_tr + apt_pax_arr) %>%
+  filter(apt %in% default_airport) %>%
+  mutate(
+    date = as.Date(paste(anmois, "01", sep=""), format = "%Y%m%d")
+  )
 
-fig <- plot_ly(data=a, x = ~date, y = ~trafic, type = 'scatter', mode = 'lines+markers')
-fig
+stats_aeroports <- summary_stat_airport(
+  create_data_from_input(pax_apt_all, year, month)
+)
 
+
+# VALORISATIONS ----------------------------------------------
+
+figure_plotly <- plot_airport_line(trafic_aeroports,default_airport)
+
+table_airports <- create_table_airports(stats_aeroports)
+
+
+# j'en suis à 4.5
 
 
 
